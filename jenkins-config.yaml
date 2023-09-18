@@ -1,0 +1,46 @@
+---
+- name: Configure Jenkins Server
+  hosts: jenkins_servers
+  become: yes
+  vars_files:
+    - vars/default.yaml
+
+  tasks:
+    - name: Set hostname
+      hostname:
+        name: jenkins
+
+    - name: Install Java
+      apt:
+        name: "{{ java }}"
+        state: present
+        update_cache: true
+
+    - name: Add Jenkins apt repository key.
+      apt_key:
+        url: "{{ jenkins.repo_key_url }}"
+        state: present
+
+    - name: Add Jenkins apt repository.
+      apt_repository:
+        repo: "{{ jenkins.repo_url }}"
+        state: present
+        update_cache: true
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+
+    - name: Start Jenkins Service
+      systemd:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    - name: Print Jenkins Administrator Password
+      command: cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: jenkins_password
+
+    - debug:
+        var: jenkins_password.stdout_lines[0]
